@@ -1,12 +1,16 @@
+const STORAGE_KEY = 'todos';
 const form = document.getElementById('todo-form');
 const input = document.getElementById('todo-input');
 const list = document.getElementById('todo-list');
 const emptyMessage = document.getElementById('empty-message');
 
-async function fetchTodos() {
-  const res = await fetch('/api/todos');
-  const todos = await res.json();
-  renderTodos(todos);
+function loadTodos() {
+  const data = localStorage.getItem(STORAGE_KEY);
+  return data ? JSON.parse(data) : [];
+}
+
+function saveTodos(todos) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
 }
 
 function renderTodos(todos) {
@@ -36,23 +40,29 @@ function renderTodos(todos) {
   });
 }
 
-async function addTodo(titleText) {
-  await fetch('/api/todos', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title: titleText }),
+function addTodo(titleText) {
+  const todos = loadTodos();
+  todos.push({
+    id: Date.now().toString(),
+    title: titleText,
+    completed: false,
   });
-  await fetchTodos();
+  saveTodos(todos);
+  renderTodos(todos);
 }
 
-async function toggleTodo(id) {
-  await fetch(`/api/todos/${id}`, { method: 'PATCH' });
-  await fetchTodos();
+function toggleTodo(id) {
+  const todos = loadTodos();
+  const todo = todos.find((t) => t.id === id);
+  if (todo) todo.completed = !todo.completed;
+  saveTodos(todos);
+  renderTodos(todos);
 }
 
-async function deleteTodo(id) {
-  await fetch(`/api/todos/${id}`, { method: 'DELETE' });
-  await fetchTodos();
+function deleteTodo(id) {
+  const todos = loadTodos().filter((t) => t.id !== id);
+  saveTodos(todos);
+  renderTodos(todos);
 }
 
 form.addEventListener('submit', (e) => {
@@ -63,4 +73,4 @@ form.addEventListener('submit', (e) => {
   addTodo(title);
 });
 
-fetchTodos();
+renderTodos(loadTodos());
